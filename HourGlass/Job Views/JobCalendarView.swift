@@ -1,9 +1,13 @@
-import SwiftUI
+// JobCalendarView.swift
+// HourGlass
+//
+// Created by Sam Cook on 16/06/2025.
+//
 
-// Renamed and modified to accept time entries directly
+import SwiftUI
+// MARK: - Calendar View
+
 struct JobCalendarView: View {
-    // It no longer has its own @Query.
-    // It receives the specific time entries it needs to display.
     let timeEntries: [TimeEntry]
     
     @State private var month: Date = .now
@@ -66,8 +70,7 @@ struct JobCalendarView: View {
             
             ForEach(days, id: \.self) { date in
                 if Calendar.current.isDate(date, equalTo: month, toGranularity: .month) {
-                    let jobColor = dailyJobColors[date]
-                    DayCellView(date: date, dotColor: jobColor)
+                    DayCellView(date: date, entryColor: dailyJobColors[date])
                 } else {
                     Color.clear
                 }
@@ -79,7 +82,7 @@ struct JobCalendarView: View {
     
     private var monthYearFormatter: DateFormatter {
         let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM" // Just the month name is cleaner here
+        formatter.dateFormat = "MMMM yy"
         return formatter
     }
     
@@ -111,43 +114,83 @@ struct JobCalendarView: View {
     }
 }
 
-// DayCellView remains the same.
+// MARK: - Day Cell View (Updated for more obvious entries)
+
 struct DayCellView: View {
     let date: Date
-    let dotColor: Color?
+    let entryColor: Color?
 
     var body: some View {
-        VStack(spacing: 4) {
-            Text(dayFormatter.string(from: date))
-                .font(.system(size: 14))
-                .frame(maxWidth: .infinity)
-                .foregroundColor(isToday ? .white : .primary)
-                .background(
-                    Circle()
-                        .fill(isToday ? Color.accentColor : Color.clear)
-                        .frame(width: 30, height: 30)
-                )
-
-            if let color = dotColor {
-                Circle()
-                    .fill(color)
-                    .frame(width: 6, height: 6)
-            } else {
-                Circle()
-                    .fill(Color.clear)
-                    .frame(width: 6, height: 6)
-            }
-        }
-        .frame(height: 40)
+        Text(dayFormatter.string(from: date))
+            .font(.system(size: 14, weight: .medium))
+            .padding(8)
+            .frame(maxWidth: .infinity)
+            .foregroundColor(foregroundColor)
+            .background(backgroundCircle)
+            .clipShape(Circle())
+            .frame(height: 40)
     }
 
     private var isToday: Bool {
         Calendar.current.isDateInToday(date)
     }
-
+    
+    @ViewBuilder
+    private var backgroundCircle: some View {
+        if isToday {
+            Circle().fill(Color.accentColor)
+        } else if let entryColor {
+            Circle().fill(entryColor)
+        } else {
+            Circle().fill(Color.clear)
+        }
+    }
+    
+    private var foregroundColor: Color {
+        if isToday || entryColor != nil {
+            return .white
+        }
+        return .primary
+    }
+    
     private var dayFormatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.dateFormat = "d"
         return formatter
+    }
+}
+
+// MARK: - Preview Provider
+
+struct JobCalendarView_Previews: PreviewProvider {
+    static var previews: some View {
+        // --- Sample Data for Preview ---
+        // This data generation is now robust and will not crash if you change the number of jobs.
+        let sampleJobs = [
+            Job(name: "Website Redesign", colorTheme: JobColor.coral),
+
+        ]
+        
+        // Safely generate sample entries to prevent index out of range errors.
+        // It programmatically creates 15 entries and cycles through the jobs array.
+        let sampleEntries: [TimeEntry] = (0..<15).compactMap { index in
+            // Ensure sampleJobs is not empty to prevent a crash from the modulo operator.
+            guard !sampleJobs.isEmpty else { return nil }
+            
+            let randomDayOffset = Int.random(in: -20...20)
+            guard let entryDate = Calendar.current.date(byAdding: .day, value: randomDayOffset, to: .now) else { return nil }
+            
+            // The modulo operator (%) ensures the index is always within the bounds of the sampleJobs array.
+            let job = sampleJobs[index % sampleJobs.count]
+            
+            return TimeEntry(startTime: entryDate, job: job)
+        }
+        // --- End Sample Data ---
+        
+        ScrollView {
+            JobCalendarView(timeEntries: sampleEntries)
+                .padding()
+        }
+        .background(Color(.systemGroupedBackground))
     }
 }

@@ -23,31 +23,45 @@ struct JobInfoView: View {
         self.job = job
         let jobID = job.persistentModelID
         self._timeEntries = Query(filter: #Predicate<TimeEntry> { $0.job?.persistentModelID == jobID },
-                                   sort: \.startTime, order: .reverse)
+                                  sort: \.startTime, order: .reverse)
     }
     
     var body: some View {
-        TabView {
-            // Embed the overview view and apply the .tabItem modifier directly to it
-            JobInfoOverviewView(job: job, isShowingTimeLoggerSheet: $isShowingTimeLoggerSheet)
-                .tabItem {
-                    Image(systemName: "house.fill")
-                    Text("Overview")
+        NavigationStack {
+            TabView {
+                JobInfoOverviewView(job: job, timeEntries: timeEntries, isShowingTimeLoggerSheet: $isShowingTimeLoggerSheet)
+                    .tabItem {
+                        Image(systemName: "house.fill")
+                        Text("Overview")
+                    }
+                
+                ContentView()
+                    .tabItem {
+                        Image(systemName: "gear")
+                        Text("Settings")
+                    }
+            }
+            .tabBarMinimizeBehavior(.onScrollDown)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Edit", systemImage: "clock") {
+                        isShowingTimeLoggerSheet = true
+                    }
                 }
-
-            ContentView()
-                .tabItem {
-                    Image(systemName: "gear")
-                    Text("Settings")
+            }
+            .sheet(isPresented: $isShowingTimeLoggerSheet) {
+                TimeLoggingView(job: job)
             }
         }
-        .tabBarMinimizeBehavior(.onScrollDown)
     }
 }
-
+        
+        
+        
 struct JobInfoOverviewView: View {
     
     var job: Job
+    var timeEntries: [TimeEntry]
     @Binding var isShowingTimeLoggerSheet: Bool
     
     // Declare environment variables in the view that uses them
@@ -62,28 +76,35 @@ struct JobInfoOverviewView: View {
                 JobInfoCardView(job: job)
                     .padding()
                 
-                if !timeEntries.isEmpty {
-                    JobCalendarView(timeEntries: timeEntries)
+                
+                VStack (alignment: .leading) {
+
+                    if !timeEntries.isEmpty {
+                        JobCalendarView(timeEntries: timeEntries)
+                    } else {
+                        VStack {
+                            Image(systemName: "clock.badge.questionmark")
+                                .font(.largeTitle)
+                                .padding(.bottom, 4)
+                            Text("No Time Entries Yet")
+                                .font(.headline)
+                            Text("Tap the clock icon to add the first entry.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .glassEffect(in: .rect(cornerRadius: 16))
+                    }
                 }
+                .padding()
             }
         }
         .background(Color(job.colorTheme.displayColor).opacity(colorScheme == .light ? 0.7 : 1.0))
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("Edit", systemImage: "clock") {
-                    isShowingTimeLoggerSheet = true
-                }
-                .buttonStyle(.glass)
-            }
-        }
-        .sheet(isPresented: $isShowingTimeLoggerSheet) {
-            // The sheet modifier is moved here to be controlled by the state
-            TimeLoggingView(job: job)
-        }
     }
 }
-
-
+        
+        
 struct JobInfoCardView : View {
     
     var job: Job
@@ -133,8 +154,7 @@ struct JobInfoCardView : View {
         .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
     }
 }
-
-
+        
 struct JobInfoHeaderView: View {
     
     let name: String
@@ -161,41 +181,15 @@ struct JobInfoHeaderView: View {
         .padding(.vertical)
     }
 }
-
-
-/// PREVIEW
+        
+        
 #Preview {
+    let sampleJob = Job(name: "Sample Job",
+                        dateCreated: .now, hourlyRate: 25.0,
+                        colorTheme: JobColor.lavender)
+    
     NavigationStack {
-        let sampleJob = Job(
-            name: "Design App Logo & Branding",
-            jobDescription: "Create a modern and friendly logo for the new mobile application. The branding should reflect our core values of innovation and user-friendliness.",
-            hourlyRate: 65.0,
-            colorTheme: .sky
-        )
-        let sampleProject = Project(name: "Mobile App V2")
-        sampleJob.parentProject = sampleProject
-        
-        let entry1 = TimeEntry(
-            startTime: Date().addingTimeInterval(-18000),
-            endTime: Date().addingTimeInterval(-14400),
-            notes: "Initial brainstorming and concept sketches."
-        )
-        
-        let entry2 = TimeEntry(
-            startTime: Date().addingTimeInterval(-10800),
-            endTime: Date().addingTimeInterval(-3600),
-            notes: "Digital rendering of the selected logo design."
-        )
-        
-        let entry3 = TimeEntry(
-            startTime: Date().addingTimeInterval(-86400),
-            endTime: Date().addingTimeInterval(-82800),
-            notes: "Client meeting to discuss initial direction."
-        )
-        
-        sampleJob.timeEntries?.append(contentsOf: [entry1, entry2, entry3])
-        
-        return JobInfoView(job: sampleJob)
+        JobInfoView(job: sampleJob)
+            .modelContainer(for: [Job.self, TimeEntry.self])
     }
 }
-
