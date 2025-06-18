@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import Foundation
+import ConfettiSwiftUI
 
 struct JobInfoView: View {
     
@@ -87,69 +88,117 @@ struct JobInfoView: View {
                 }
             }
             
-            
-            if selectedTab == .overview || selectedTab == .entries {
+            if !job.isCompleted && (selectedTab == .overview || selectedTab == .entries) {
                 ToolbarItem {
                     Button("Add", systemImage: "clock") {
                         isShowingTimeLoggerSheet = true
                     }
                 }
             }
-            
         }
+        
+    }
+}
+
+struct JobCompletedView: View {
+    @Bindable var job: Job
+    
+    var body: some View {
+        VStack {
+            Spacer()
+            
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: 100))
+                .foregroundStyle(.white)
+                .padding()
+            
+            Text("Job Completed")
+                .font(.largeTitle.bold())
+                .foregroundStyle(.white)
+            
+            Spacer()
+            
+            Button {
+                job.toggleCompleted()
+            } label: {
+                Label("Mark as Incomplete", systemImage: "arrow.uturn.backward.circle.fill")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(.white.opacity(0.2))
+                    .foregroundStyle(.white)
+                    .clipShape(Capsule())
+            }
+            .padding()
+        }
+        
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.green)
         
     }
 }
 
 struct JobInfoOverviewView: View {
     
-    var job: Job
+    @Bindable var job: Job
     var timeEntries: [TimeEntry]
     @Binding var isShowingTimeLoggerSheet: Bool
     
     @Environment(\.colorScheme) var colorScheme
+    @State private var isConfettiCannonActive = false
     
     var body: some View {
-        ScrollView {
-            VStack {
-                JobInfoHeaderView(name: job.name, iconName: job.systemIconName)
-                    .padding(.horizontal)
-                
-                
-                JobInfoCardView(job: job)
+        ZStack {
+            ScrollView {
+                VStack {
+                    JobInfoHeaderView(name: job.name, iconName: job.systemIconName)
+                        .padding(.horizontal)
                     
-                    .padding()
-                
-                
-                VStack (alignment: .leading) {
-                    if !timeEntries.isEmpty {
-                        JobCalendarView(timeEntries: timeEntries)
-                    } else {
-                        VStack {
-                            Image(systemName: "clock.badge.questionmark")
-                                .font(.largeTitle)
-                                .padding(.bottom, 4)
-                            Text("No Time Entries Yet")
-                                .font(.headline)
-                            Text("Tap the clock icon to add the first entry.")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .glassEffect(in: .rect(cornerRadius: 16))
+                    if !job.isCompleted {
+                        JobInfoCardView(job: job)
+                            .padding()
                     }
+                    
+                    VStack(alignment: .leading) {
+                        if !timeEntries.isEmpty {
+                            JobCalendarView(timeEntries: timeEntries)
+                        } else {
+                            VStack {
+                                Image(systemName: "clock.badge.questionmark")
+                                    .font(.largeTitle)
+                                    .padding(.bottom, 4)
+                                Text("No Time Entries Yet")
+                                    .font(.headline)
+                                Text("Tap the clock icon to add the first entry.")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .glassEffect(in: .rect(cornerRadius: 16))
+                        }
+                    }
+                    .padding()
                 }
-                .padding()
+            }
+            .background(Color(job.colorTheme.displayColor).opacity(colorScheme == .light ? 0.7 : 1.0))
+            
+            if job.isCompleted {
+                JobCompletedView(job: job)
             }
         }
-        .background(Color(job.colorTheme.displayColor).opacity(colorScheme == .light ? 0.7 : 1.0))
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: job.isCompleted)
+        .confettiCannon(trigger:$isConfettiCannonActive, num: 80, openingAngle: .degrees(60), closingAngle: .degrees(120), radius: 300)
+        .onChange(of: job.isCompleted) { _, isCompleted in
+            if isCompleted {
+                isConfettiCannonActive = true
+            }
+        }
     }
 }
 
 struct JobInfoCardView : View {
     
-    var job: Job
+    @Bindable var job: Job
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -190,21 +239,18 @@ struct JobInfoCardView : View {
             Divider()
             
             Button {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-                    job.toggleCompleted()
-                }
+                job.toggleCompleted()
             } label: {
-                Label(job.isCompleted ? "Mark as Incomplete" : "Mark as Complete",
-                      systemImage: job.isCompleted ? "arrow.uturn.backward.circle.fill" : "checkmark.circle.fill")
-                .frame(maxWidth: .infinity)
+                Label("Mark as Complete", systemImage: "checkmark.circle.fill")
+                    .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
-            .tint(job.isCompleted ? .gray : .accentColor)
+            .tint(.accentColor)
             .padding(.top)
         }
         .padding()
         .glassEffect(.regular, in : .rect(cornerRadius: 16))
-
+        .transition(.scale.combined(with: .opacity))
     }
 }
 
@@ -231,7 +277,6 @@ struct JobInfoHeaderView: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.primary)
         }
-        
     }
 }
 

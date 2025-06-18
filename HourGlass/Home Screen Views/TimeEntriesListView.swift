@@ -3,6 +3,7 @@ import SwiftData
 
 struct TimeEntriesListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     
     let job: Job
     
@@ -12,6 +13,7 @@ struct TimeEntriesListView: View {
     
     var body: some View {
         FilteredTimeEntriesView(job: job, sortOption: sortOption, filterOption: filterOption)
+            .background(Color(job.colorTheme.displayColor).opacity(colorScheme == .light ? 0.7 : 1.0))
     }
 }
 
@@ -76,6 +78,7 @@ private struct FilteredTimeEntriesView: View {
     var body: some View {
         if sortedTimeEntries.isEmpty {
             ContentUnavailableView("No Time Entries Found", systemImage: "clock.badge.xmark")
+                
         } else {
             List {
                 ForEach(sortedTimeEntries) { entry in
