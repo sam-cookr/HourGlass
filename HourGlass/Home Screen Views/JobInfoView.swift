@@ -37,7 +37,7 @@ struct JobInfoView: View {
                         Text("Overview")
                     }
                 
-                ContentView()
+                JobEditView(job: job)
                     .tabItem {
                         Image(systemName: "gear")
                         Text("Settings")
@@ -80,7 +80,7 @@ struct JobInfoOverviewView: View {
         ScrollView {
             VStack {
                 JobInfoHeaderView(name: job.name, iconName: job.systemIconName)
-                // You would presumably list your time entries here
+                    .padding(.horizontal)
                 
                 JobInfoCardView(job: job)
                     .padding()
@@ -189,7 +189,6 @@ struct JobInfoHeaderView: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.primary)
         }
-        .padding(.vertical)
     }
 }
         
