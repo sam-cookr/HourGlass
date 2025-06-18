@@ -187,6 +187,20 @@ struct JobInfoCardView : View {
                 Label("Total Earnings", systemImage: "banknote")
             }
             
+            Divider()
+            
+            Button {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                    job.toggleCompleted()
+                }
+            } label: {
+                Label(job.isCompleted ? "Mark as Incomplete" : "Mark as Complete",
+                      systemImage: job.isCompleted ? "arrow.uturn.backward.circle.fill" : "checkmark.circle.fill")
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(job.isCompleted ? .gray : .accentColor)
+            .padding(.top)
         }
         .padding()
         .glassEffect(.regular, in : .rect(cornerRadius: 16))
