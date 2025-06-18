@@ -64,6 +64,7 @@ struct JobInfoView: View {
             
         }
         .toolbar {
+            
             if selectedTab == .entries {
                 ToolbarItem {
                     Menu {
@@ -114,8 +115,11 @@ struct JobInfoOverviewView: View {
                 JobInfoHeaderView(name: job.name, iconName: job.systemIconName)
                     .padding(.horizontal)
                 
+                
                 JobInfoCardView(job: job)
+                    
                     .padding()
+                
                 
                 VStack (alignment: .leading) {
                     if !timeEntries.isEmpty {
@@ -185,7 +189,8 @@ struct JobInfoCardView : View {
             
         }
         .padding()
-        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
+        .glassEffect(.regular, in : .rect(cornerRadius: 16))
+
     }
 }
 
@@ -212,6 +217,7 @@ struct JobInfoHeaderView: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.primary)
         }
+        
     }
 }
 

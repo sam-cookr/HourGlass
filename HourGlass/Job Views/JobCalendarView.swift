@@ -36,7 +36,7 @@ struct JobCalendarView: View {
                 calendarGridView
             }
             .padding()
-            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 15))
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 15))
         }
     }
 

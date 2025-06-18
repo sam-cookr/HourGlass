@@ -16,10 +16,10 @@ struct JobCardView: View {
             Image(systemName: job.systemIconName)
                 .font(.title)
                 .foregroundColor(.white)
-                .padding(12)
-                .background(Color.black.opacity(0.2))
-                .glassEffect()
-                .clipShape(Circle())
+                .frame(width:48, height: 48)
+                .padding(4)
+                .background(Color.black.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
                 
 
             VStack(alignment: .leading) {
