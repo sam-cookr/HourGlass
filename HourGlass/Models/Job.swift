@@ -53,6 +53,14 @@ class Job {
     func changeIconName(_ newName: String) {
         self.systemIconName = newName
     }
+    
+    func toggleCompleted () {
+        if self.isCompleted {
+            self.isCompleted = false
+        } else {
+            self.isCompleted = true
+        }
+    }
 
 
     var totalLoggedTime: TimeInterval {

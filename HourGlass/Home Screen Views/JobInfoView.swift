@@ -18,6 +18,8 @@ struct JobInfoView: View {
     
     @State private var isShowingTimeLoggerSheet = false
     
+    @Environment(\.modelContext) private var modelContext
+    
     // The initializer filters the query based on the specific job
     init(job: Job) {
         self.job = job
@@ -42,16 +44,23 @@ struct JobInfoView: View {
                     }
             }
             .tabBarMinimizeBehavior(.onScrollDown)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Edit", systemImage: "clock") {
-                        isShowingTimeLoggerSheet = true
-                    }
-                }
-            }
+            
             .sheet(isPresented: $isShowingTimeLoggerSheet) {
                 TimeLoggingView(job: job)
             }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Edit", systemImage: "clock") {
+                    isShowingTimeLoggerSheet = true
+                }
+            }
+        }
+    }
+    
+    private func deleteTimeEntry(_ entry: TimeEntry) {
+        withAnimation {
+            modelContext.delete(entry)
         }
     }
 }
@@ -153,6 +162,8 @@ struct JobInfoCardView : View {
         .padding()
         .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
     }
+    
+    
 }
         
 struct JobInfoHeaderView: View {

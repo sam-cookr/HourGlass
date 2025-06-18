@@ -5,13 +5,18 @@
 //  Created by Sam Cook on 16/06/2025.
 //
 
+// HourGlassApp.swift
+
 import SwiftUI
 import SwiftData
 
 @main
 struct HourGlassApp: App {
     var sharedModelContainer: ModelContainer = {
+        // Add Job.self to the schema
         let schema = Schema([
+            Job.self
+
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
