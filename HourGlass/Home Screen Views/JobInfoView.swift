@@ -187,7 +187,12 @@ struct JobInfoOverviewView: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: job.isCompleted)
-        .confettiCannon(trigger:$isConfettiCannonActive, num: 80, openingAngle: .degrees(60), closingAngle: .degrees(120), radius: 300)
+        .confettiCannon(
+                    trigger: $isConfettiCannonActive,
+                    num: 600,
+                    confettiSize: 12.0,
+                    fadesOut: true, radius: UIScreen.main.bounds.height
+                )
         .onChange(of: job.isCompleted) { _, isCompleted in
             if isCompleted {
                 isConfettiCannonActive = true
