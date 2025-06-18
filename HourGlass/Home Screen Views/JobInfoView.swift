@@ -1,26 +1,25 @@
-//
-//  Jo.swift
-//  HourGlass
-//
-//  Created by Sam Cook on 16/06/2025.
-//
-
 import SwiftUI
 import SwiftData
 import Foundation
 
 struct JobInfoView: View {
     
+    private enum JobTab {
+        case overview, entries, edit
+    }
+    
     @Bindable var job: Job
     
-    // This query is now correctly filtered
     @Query private var timeEntries: [TimeEntry]
     
     @State private var isShowingTimeLoggerSheet = false
+    @State private var selectedTab: JobTab = .overview
+    
+    @State private var sortOption = SortOption.newestFirst
+    @State private var filterOption = FilterOption.all
     
     @Environment(\.modelContext) private var modelContext
     
-    // The initializer filters the query based on the specific job
     init(job: Job) {
         self.job = job
         let jobID = job.persistentModelID
@@ -30,50 +29,83 @@ struct JobInfoView: View {
     
     var body: some View {
         NavigationStack {
-            TabView {
+            TabView(selection: $selectedTab) {
                 JobInfoOverviewView(job: job, timeEntries: timeEntries, isShowingTimeLoggerSheet: $isShowingTimeLoggerSheet)
                     .tabItem {
                         Image(systemName: "house.fill")
                         Text("Overview")
                     }
+                    .tag(JobTab.overview)
+                
+                TimeEntriesListView(
+                    job: job,
+                    isShowingTimeLoggerSheet: $isShowingTimeLoggerSheet,
+                    sortOption: $sortOption,
+                    filterOption: $filterOption
+                )
+                .tabItem {
+                    Image(systemName: "list.bullet.clipboard")
+                    Text("All Entries")
+                }
+                .tag(JobTab.entries)
                 
                 JobEditView(job: job)
                     .tabItem {
                         Image(systemName: "gear")
-                        Text("Settings")
+                        Text("Edit Job")
                     }
+                    .tag(JobTab.edit)
             }
+            .navigationBarTitleDisplayMode(.inline)
             .tabBarMinimizeBehavior(.onScrollDown)
-            
             .sheet(isPresented: $isShowingTimeLoggerSheet) {
                 TimeLoggingView(job: job)
             }
+            
         }
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("Edit", systemImage: "clock") {
-                    isShowingTimeLoggerSheet = true
+            if selectedTab == .entries {
+                ToolbarItem {
+                    Menu {
+                        Picker("Sort", selection: $sortOption) {
+                            ForEach(SortOption.allCases) { option in
+                                Text(option.rawValue).tag(option)
+                            }
+                        }
+                        
+                        Divider()
+                        
+                        Picker("Filter", selection: $filterOption) {
+                            ForEach(FilterOption.allCases) { option in
+                                Text(option.rawValue).tag(option)
+                            }
+                        }
+                    } label: {
+                        Label("Options", systemImage: "slider.horizontal.3")
+                    }
                 }
             }
+            
+            
+            if selectedTab == .overview || selectedTab == .entries {
+                ToolbarItem {
+                    Button("Add", systemImage: "clock") {
+                        isShowingTimeLoggerSheet = true
+                    }
+                }
+            }
+            
         }
-    }
-    
-    private func deleteTimeEntry(_ entry: TimeEntry) {
-        withAnimation {
-            modelContext.delete(entry)
-        }
+        
     }
 }
-        
-        
-        
+
 struct JobInfoOverviewView: View {
     
     var job: Job
     var timeEntries: [TimeEntry]
     @Binding var isShowingTimeLoggerSheet: Bool
     
-    // Declare environment variables in the view that uses them
     @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
@@ -85,9 +117,7 @@ struct JobInfoOverviewView: View {
                 JobInfoCardView(job: job)
                     .padding()
                 
-                
                 VStack (alignment: .leading) {
-
                     if !timeEntries.isEmpty {
                         JobCalendarView(timeEntries: timeEntries)
                     } else {
@@ -112,8 +142,7 @@ struct JobInfoOverviewView: View {
         .background(Color(job.colorTheme.displayColor).opacity(colorScheme == .light ? 0.7 : 1.0))
     }
 }
-        
-        
+
 struct JobInfoCardView : View {
     
     var job: Job
@@ -124,7 +153,6 @@ struct JobInfoCardView : View {
                 .font(.headline)
                 .padding(.bottom, 5)
             
-            /// Hourly Rate
             LabeledContent {
                 Text(job.hourlyRate.formatted(.currency(code: "GBP")))
             } label: {
@@ -133,7 +161,6 @@ struct JobInfoCardView : View {
             
             Divider()
             
-            /// Date Created
             LabeledContent {
                 Text(job.dateCreated.formatted(date: .long, time: .omitted))
             } label: {
@@ -142,7 +169,6 @@ struct JobInfoCardView : View {
             
             Divider()
             
-            /// Total time logged
             LabeledContent {
                 Text(job.formattedTotalLoggedTime)
             } label: {
@@ -151,7 +177,6 @@ struct JobInfoCardView : View {
             
             Divider()
             
-            /// Total Earnings
             LabeledContent {
                 Text((job.totalLoggedTime / 3600 * job.hourlyRate).formatted(.currency(code: "GBP")))
             } label: {
@@ -162,10 +187,8 @@ struct JobInfoCardView : View {
         .padding()
         .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
     }
-    
-    
 }
-        
+
 struct JobInfoHeaderView: View {
     
     let name: String
@@ -191,14 +214,13 @@ struct JobInfoHeaderView: View {
         }
     }
 }
-        
-        
+
 #Preview {
     let sampleJob = Job(name: "Sample Job",
                         dateCreated: .now, hourlyRate: 25.0,
                         colorTheme: JobColor.lavender)
     
-    NavigationStack {
+    return NavigationStack {
         JobInfoView(job: sampleJob)
             .modelContainer(for: [Job.self, TimeEntry.self])
     }

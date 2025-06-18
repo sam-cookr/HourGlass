@@ -4,38 +4,15 @@ import SwiftData
 struct TimeEntriesListView: View {
     @Environment(\.modelContext) private var modelContext
     
-    @State private var sortOrder = SortOrder.descending
-    @State private var filterOption = FilterOption.all
+    let job: Job
+    
+    @Binding var isShowingTimeLoggerSheet: Bool
+    @Binding var sortOption: SortOption
+    @Binding var filterOption: FilterOption
     
     var body: some View {
-        NavigationStack {
-            VStack {
-                FilteredTimeEntriesView(sortOrder: sortOrder, filterOption: filterOption)
-            }
-            .navigationTitle("Time Entries")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Menu {
-                        Picker("Sort", selection: $sortOrder) {
-                            Text("Newest First").tag(SortOrder.descending)
-                            Text("Oldest First").tag(SortOrder.ascending)
-                        }
-                    } label: {
-                        Label("Sort", systemImage: "arrow.up.arrow.down")
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Picker("Filter", selection: $filterOption) {
-                            ForEach(FilterOption.allCases) { option in
-                                Text(option.rawValue).tag(option)
-                            }
-                        }
-                    } label: {
-                        Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
-                    }
-                }
-            }
+        VStack {
+            FilteredTimeEntriesView(job: job, sortOption: sortOption, filterOption: filterOption)
         }
     }
 }
@@ -44,9 +21,10 @@ private struct FilteredTimeEntriesView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var timeEntries: [TimeEntry]
 
-    init(sortOrder: SortOrder, filterOption: FilterOption) {
+    init(job: Job, sortOption: SortOption, filterOption: FilterOption) {
         let now = Date()
         let calendar = Calendar.current
+        let jobID = job.id
         
         let startDate: Date? = {
             switch filterOption {
@@ -59,16 +37,19 @@ private struct FilteredTimeEntriesView: View {
             }
         }()
 
-        let predicate: Predicate<TimeEntry>? = {
+        let predicate: Predicate<TimeEntry> = {
             if let startDate = startDate {
                 return #Predicate<TimeEntry> { entry in
-                    entry.startTime >= startDate
+                    entry.job?.id == jobID && entry.startTime >= startDate
+                }
+            } else {
+                return #Predicate<TimeEntry> { entry in
+                    entry.job?.id == jobID
                 }
             }
-            return nil
         }()
         
-        _timeEntries = Query(filter: predicate, sort: [SortDescriptor<TimeEntry>(\.startTime, order: sortOrder.descriptor)])
+        _timeEntries = Query(filter: predicate, sort: [sortOption.descriptor])
     }
 
     var body: some View {
@@ -99,16 +80,13 @@ private struct TimeEntryRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading) {
-                Text(entry.job?.name ?? "No Job Assigned")
-                    .font(.headline)
                 Text(entry.startTime, style: .date)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 if let notes = entry.notes, !notes.isEmpty {
                     Text(notes)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                        .font(.body)
+                        .lineLimit(2)
                 }
             }
             Spacer()
@@ -120,28 +98,39 @@ private struct TimeEntryRow: View {
     }
 }
 
-private enum SortOrder {
-    case ascending
-    case descending
+enum SortOption: String, CaseIterable, Identifiable {
+    case newestFirst = "Newest First"
+    case oldestFirst = "Oldest First"
+    case longestFirst = "Longest First"
+    case shortestFirst = "Shortest First"
 
-    var descriptor: Foundation.SortOrder {
+    var id: Self { self }
+
+    var descriptor: SortDescriptor<TimeEntry> {
         switch self {
-        case .ascending: .forward
-        case .descending: .reverse
+        case .newestFirst:
+            return SortDescriptor(\TimeEntry.startTime, order: .reverse)
+        case .oldestFirst:
+            return SortDescriptor(\TimeEntry.startTime, order: .forward)
+        case .longestFirst:
+            return SortDescriptor(\TimeEntry.duration, order: .reverse)
+        case .shortestFirst:
+            return SortDescriptor(\TimeEntry.duration, order: .forward)
         }
     }
 }
 
-private enum FilterOption: String, CaseIterable, Identifiable {
-    case all = "All Entries"
-    case pastWeek = "Past Week"
-    case pastMonth = "Past Month"
+enum FilterOption: String, CaseIterable, Identifiable {
+    case all = "All Time"
+    case pastWeek = "Past 7 Days"
+    case pastMonth = "Past 30 Days"
     
     var id: Self { self }
 }
 
 extension TimeEntry {
     var formattedDuration: String {
+        guard duration > 0 else { return "00:00" }
         let totalSeconds = Int(duration)
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
@@ -154,19 +143,18 @@ extension TimeEntry {
     let container = try! ModelContainer(for: TimeEntry.self, Job.self, configurations: config)
 
     let job1 = Job(name: "Website Development", colorTheme: .sky)
-    let job2 = Job(name: "App Design", colorTheme: .rose)
     container.mainContext.insert(job1)
-    container.mainContext.insert(job2)
 
     let entry1 = TimeEntry(startTime: .now.addingTimeInterval(-3600 * 2), endTime: .now.addingTimeInterval(-3600), notes: "Worked on the homepage.", job: job1)
-    let entry2 = TimeEntry(startTime: .now.addingTimeInterval(-86400 * 3), endTime: .now.addingTimeInterval(-86400 * 3 + 1800), notes: "Initial wireframes.", job: job2)
-    let entry3 = TimeEntry(startTime: .now.addingTimeInterval(-86400 * 10), endTime: .now.addingTimeInterval(-86400 * 10 + 7200), notes: "API integration.", job: job1)
-    
     container.mainContext.insert(entry1)
-    container.mainContext.insert(entry2)
-    container.mainContext.insert(entry3)
 
-
-    return TimeEntriesListView()
-        .modelContainer(container)
+    return NavigationStack {
+         TimeEntriesListView(
+            job: job1,
+            isShowingTimeLoggerSheet: .constant(false),
+            sortOption: .constant(.newestFirst),
+            filterOption: .constant(.all)
+         )
+         .modelContainer(container)
+    }
 }

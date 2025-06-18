@@ -18,7 +18,9 @@ struct JobCardView: View {
                 .foregroundColor(.white)
                 .padding(12)
                 .background(Color.black.opacity(0.2))
+                .glassEffect()
                 .clipShape(Circle())
+                
 
             VStack(alignment: .leading) {
                 Text(job.name)
