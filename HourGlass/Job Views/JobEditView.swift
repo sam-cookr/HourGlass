@@ -82,7 +82,6 @@ struct JobEditView: View {
                         
                     }
                 }
-                .scrollContentBackground(.hidden)
             }
             .navigationTitle("Edit Job")
             .background(Color(job.colorTheme.displayColor).opacity(colorScheme == .light ? 0.7 : 1.0))

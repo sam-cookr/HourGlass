@@ -11,6 +11,8 @@ import SwiftData
 struct JobCardView: View {
     var job: Job
     
+    @Environment(\.colorScheme) private var colorScheme
+    
     var body: some View {
         HStack(spacing: 15) {
             Image(systemName: job.systemIconName)
@@ -45,7 +47,8 @@ struct JobCardView: View {
             }
         }
         .padding()
-        .background(job.colorTheme.displayColor)
+        .background(Color(job.colorTheme.displayColor)
+            .opacity(colorScheme == .light ? 1 : 0.5))
         .cornerRadius(12)
     }
 }

@@ -6,7 +6,7 @@ import ConfettiSwiftUI
 struct JobInfoView: View {
     
     private enum JobTab {
-        case overview, entries, edit
+        case overview, entries
     }
     
     @Bindable var job: Job
@@ -14,7 +14,9 @@ struct JobInfoView: View {
     @Query private var timeEntries: [TimeEntry]
     
     @State private var isShowingTimeLoggerSheet = false
+    @State private var isShowingEditJobSheet = false
     @State private var selectedTab: JobTab = .overview
+    
     
     @State private var sortOption = SortOption.newestFirst
     @State private var filterOption = FilterOption.all
@@ -34,6 +36,7 @@ struct JobInfoView: View {
                 JobInfoOverviewView(job: job, timeEntries: timeEntries, isShowingTimeLoggerSheet: $isShowingTimeLoggerSheet)
                     .tabItem {
                         Image(systemName: "house.fill")
+                            .symbolEffect(.drawOn, isActive: selectedTab == .overview)
                         Text("Overview")
                     }
                     .tag(JobTab.overview)
@@ -46,21 +49,18 @@ struct JobInfoView: View {
                 )
                 .tabItem {
                     Image(systemName: "list.bullet.clipboard")
+                        .symbolEffect(.drawOn.individually, isActive: selectedTab == .entries)
                     Text("All Entries")
                 }
                 .tag(JobTab.entries)
-                
-                JobEditView(job: job)
-                    .tabItem {
-                        Image(systemName: "gear")
-                        Text("Edit Job")
-                    }
-                    .tag(JobTab.edit)
             }
             .navigationBarTitleDisplayMode(.inline)
             .tabBarMinimizeBehavior(.onScrollDown)
             .sheet(isPresented: $isShowingTimeLoggerSheet) {
                 TimeLoggingView(job: job)
+            }
+            .sheet(isPresented: $isShowingEditJobSheet) {
+                JobEditView(job: job)
             }
             
         }
@@ -68,7 +68,7 @@ struct JobInfoView: View {
             
             if selectedTab == .entries {
                 ToolbarItem {
-                    Menu {
+                    Menu("Options", systemImage: "line.3.horizontal.decrease.circle") {
                         Picker("Sort", selection: $sortOption) {
                             ForEach(SortOption.allCases) { option in
                                 Text(option.rawValue).tag(option)
@@ -82,21 +82,27 @@ struct JobInfoView: View {
                                 Text(option.rawValue).tag(option)
                             }
                         }
-                    } label: {
-                        Label("Options", systemImage: "slider.horizontal.3")
+                    }
+                    
+                }
+            }
+            
+            if selectedTab == .overview {
+                ToolbarItem {
+                    Button("Edit", systemImage: "gear"){
+                        isShowingEditJobSheet = true
                     }
                 }
             }
             
-            if !job.isCompleted && (selectedTab == .overview || selectedTab == .entries) {
-                ToolbarItem {
-                    Button("Add", systemImage: "clock") {
-                        isShowingTimeLoggerSheet = true
-                    }
+            ToolbarSpacer(.fixed)
+            
+            ToolbarItem {
+                Button("Add", systemImage: "clock") {
+                    isShowingTimeLoggerSheet = true
                 }
             }
         }
-        
     }
 }
 
@@ -180,7 +186,8 @@ struct JobInfoOverviewView: View {
                     .padding()
                 }
             }
-            .background(Color(job.colorTheme.displayColor).opacity(colorScheme == .light ? 0.7 : 1.0))
+            .background(Color(job.colorTheme.displayColor)
+                .opacity(colorScheme == .light ? 1 : 0.5))
             
             if job.isCompleted {
                 JobCompletedView(job: job)
@@ -271,6 +278,7 @@ struct JobInfoHeaderView: View {
                     .font(.system(size: 48, weight: .light))
                     .padding(10)
                     .shadow(color: .black.opacity(0.15), radius: 15)
+                    .symbolColorRenderingMode(.gradient)
             }
             .frame(maxWidth: .infinity,
                    alignment: .center)
