@@ -13,7 +13,8 @@ struct TimeEntriesListView: View {
     
     var body: some View {
         FilteredTimeEntriesView(job: job, sortOption: sortOption, filterOption: filterOption)
-            .background(Color(job.colorTheme.displayColor).opacity(colorScheme == .light ? 0.7 : 1.0))
+            .background(Color(job.colorTheme.displayColor)
+                .opacity(colorScheme == .light ? 1 : 0.5))
     }
 }
 
