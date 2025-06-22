@@ -1,5 +1,3 @@
-// Job.swift
-
 import SwiftData
 import Foundation
 import SwiftUI
@@ -11,13 +9,12 @@ class Job {
     var jobDescription: String?
     var dateCreated: Date
     var updatedAt: Date?
-    var hourlyRate: Double // For calculating earnings
-    var isCompleted: Bool // To mark if a job is done
+    var hourlyRate: Double
+    var isCompleted: Bool
     var systemIconName: String = "briefcase"
     var colorTheme: JobColor
     
     static let iconOptions = [
-        // Original & Core
         "briefcase", "person.2", "display", "wrench.and.screwdriver",
         "hammer", "building.2", "doc.text", "folder", "calendar",
         "clock", "timer", "stopwatch", "dollarsign.circle", "eurosign.circle",
@@ -73,6 +70,10 @@ class Job {
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         return "\(hours)h \(minutes)m"
+    }
+    
+    var totalEarnings: Double {
+        timeEntries?.filter { $0.isBillable }.reduce(0) { $0 + $1.earnings } ?? 0
     }
 }
 

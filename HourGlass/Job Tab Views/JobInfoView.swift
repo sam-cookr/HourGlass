@@ -13,14 +13,13 @@ struct JobInfoView: View {
     
     @Query private var timeEntries: [TimeEntry]
     
-    // State
     @State private var isShowingTimeLoggerSheet = false
     @State private var isShowingEditJobSheet = false
     @State private var selectedTab: JobTab = .overview
     
-    // Declare sort and filter options
     @State private var sortOption = SortOption.newestFirst
     @State private var filterOption = FilterOption.all
+    @State private var showBillableTag: Bool = true
     
     @Environment(\.modelContext) private var modelContext
     
@@ -46,7 +45,8 @@ struct JobInfoView: View {
                     job: job,
                     isShowingTimeLoggerSheet: $isShowingTimeLoggerSheet,
                     sortOption: $sortOption,
-                    filterOption: $filterOption
+                    filterOption: $filterOption,
+                    showBillableTag: $showBillableTag
                 )
                 .tabItem {
                     Image(systemName: "list.bullet.clipboard")
@@ -82,6 +82,12 @@ struct JobInfoView: View {
                             ForEach(FilterOption.allCases) { option in
                                 Text(option.rawValue).tag(option)
                             }
+                        }
+                        
+                        Divider()
+                        
+                        Toggle(isOn: $showBillableTag) {
+                            Text("Show Billable Tag")
                         }
                     }
                     

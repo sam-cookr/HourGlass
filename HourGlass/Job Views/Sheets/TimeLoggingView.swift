@@ -1,25 +1,6 @@
-//
-//  TimeLoggingView.swift
-//  HourGlass
-//
-//  Created by Sam Cook on 16/06/2025.
-//
-
-
-//
-//  TimeLoggingView.swift
-//  OTC
-//
-//  Created by Sam Cook on 11/06/2025.
-//
-
-
-// TimeLoggingView.swift
-
 import SwiftUI
 import SwiftData
 
-/// A view for logging a new time entry against a specific job.
 struct TimeLoggingView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -30,6 +11,9 @@ struct TimeLoggingView: View {
     @State private var startTime: Date = Date()
     @State private var endTime: Date = Date()
     @State private var notes: String = ""
+    @State private var isBillable: Bool = true
+    @State private var useCustomRate: Bool = false
+    @State private var customRateString: String = ""
 
     var body: some View {
         NavigationView {
@@ -46,6 +30,20 @@ struct TimeLoggingView: View {
                 Section(header: Text("Log Time")) {
                     DatePicker("Start Time", selection: $startTime, displayedComponents: .hourAndMinute)
                     DatePicker("End Time", selection: $endTime, displayedComponents: .hourAndMinute)
+                }
+                
+                Section(header: Text("Billing Details")) {
+                    Toggle("Billable Entry", isOn: $isBillable)
+                    Toggle("Set Custom Hourly Rate", isOn: $useCustomRate.animation())
+                    
+                    if useCustomRate {
+                        HStack {
+                            Text("Custom Rate")
+                            TextField("Rate", text: $customRateString, prompt: Text(job.hourlyRate, format: .number))
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                        }
+                    }
                 }
 
                 Section(header: Text("Notes (Optional)")) {
@@ -66,38 +64,36 @@ struct TimeLoggingView: View {
                         logTime()
                         dismiss()
                     }
-                    // Prevent saving if the end time is before the start time
                     .disabled(endTime < startTime)
                 }
             }
         }
     }
 
-    /// Creates and saves a new TimeEntry object based on the user's input.
     private func logTime() {
         let calendar = Calendar.current
         
-        // Extract hour and minute from the time pickers
         let startComponents = calendar.dateComponents([.hour, .minute], from: startTime)
         let endComponents = calendar.dateComponents([.hour, .minute], from: endTime)
         
-        // Combine the selected date with the start and end times
         guard let finalStartDate = calendar.date(bySettingHour: startComponents.hour ?? 0, minute: startComponents.minute ?? 0, second: 0, of: selectedDate),
               var finalEndDate = calendar.date(bySettingHour: endComponents.hour ?? 0, minute: endComponents.minute ?? 0, second: 0, of: selectedDate) else {
             return
         }
 
-        // Adjust for entries that span across midnight
         if finalEndDate < finalStartDate {
             finalEndDate = calendar.date(byAdding: .day, value: 1, to: finalEndDate)!
         }
+        
+        let customRate = useCustomRate ? Double(customRateString) : nil
 
-        // Create the new TimeEntry and insert it into the model context
         let newTimeEntry = TimeEntry(
             startTime: finalStartDate,
             endTime: finalEndDate,
             notes: notes.isEmpty ? nil : notes,
-            job: job
+            job: job,
+            isBillable: isBillable,
+            customRate: customRate
         )
         
         modelContext.insert(newTimeEntry)

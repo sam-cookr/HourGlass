@@ -10,9 +10,10 @@ struct TimeEntriesListView: View {
     @Binding var isShowingTimeLoggerSheet: Bool
     @Binding var sortOption: SortOption
     @Binding var filterOption: FilterOption
+    @Binding var showBillableTag: Bool
     
     var body: some View {
-        FilteredTimeEntriesView(job: job, sortOption: sortOption, filterOption: filterOption)
+        FilteredTimeEntriesView(job: job, sortOption: sortOption, filterOption: filterOption, showBillableTag: $showBillableTag)
             .background(Color(job.colorTheme.displayColor)
                 .opacity(colorScheme == .light ? 1 : 0.5))
     }
@@ -22,37 +23,33 @@ private struct FilteredTimeEntriesView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var timeEntries: [TimeEntry]
     
+    @Binding private var showBillableTag: Bool
     private let sortOption: SortOption
     
-    init(job: Job, sortOption: SortOption, filterOption: FilterOption) {
+    init(job: Job, sortOption: SortOption, filterOption: FilterOption, showBillableTag: Binding<Bool>) {
         self.sortOption = sortOption
+        self._showBillableTag = showBillableTag
         
         let now = Date()
         let calendar = Calendar.current
         let jobID = job.id
         
-        let startDate: Date? = {
-            switch filterOption {
-            case .pastWeek:
-                return calendar.date(byAdding: .day, value: -7, to: now)
-            case .pastMonth:
-                return calendar.date(byAdding: .month, value: -1, to: now)
-            case .all:
-                return nil
-            }
-        }()
+        let finalPredicate: Predicate<TimeEntry>
 
-        let predicate: Predicate<TimeEntry> = {
-            if let startDate = startDate {
-                return #Predicate<TimeEntry> { entry in
-                    entry.job?.id == jobID && entry.startTime >= startDate
-                }
-            } else {
-                return #Predicate<TimeEntry> { entry in
-                    entry.job?.id == jobID
-                }
-            }
-        }()
+        switch filterOption {
+        case .all:
+            finalPredicate = #Predicate<TimeEntry> { $0.job?.id == jobID }
+        case .pastWeek:
+            let startDate = calendar.date(byAdding: .day, value: -7, to: now)!
+            finalPredicate = #Predicate<TimeEntry> { $0.job?.id == jobID && $0.startTime >= startDate }
+        case .pastMonth:
+            let startDate = calendar.date(byAdding: .month, value: -1, to: now)!
+            finalPredicate = #Predicate<TimeEntry> { $0.job?.id == jobID && $0.startTime >= startDate }
+        case .billable:
+            finalPredicate = #Predicate<TimeEntry> { $0.job?.id == jobID && $0.isBillable }
+        case .nonBillable:
+            finalPredicate = #Predicate<TimeEntry> { $0.job?.id == jobID && !$0.isBillable }
+        }
         
         let querySortDescriptor: SortDescriptor<TimeEntry>
         switch sortOption {
@@ -62,7 +59,7 @@ private struct FilteredTimeEntriesView: View {
             querySortDescriptor = SortDescriptor(\TimeEntry.startTime, order: .reverse)
         }
         
-        _timeEntries = Query(filter: predicate, sort: [querySortDescriptor])
+        _timeEntries = Query(filter: finalPredicate, sort: [querySortDescriptor])
     }
     
     private var sortedTimeEntries: [TimeEntry] {
@@ -83,7 +80,7 @@ private struct FilteredTimeEntriesView: View {
         } else {
             List {
                 ForEach(sortedTimeEntries) { entry in
-                    TimeEntryRow(entry: entry)
+                    TimeEntryRow(entry: entry, showBillableTag: $showBillableTag)
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                 }
@@ -106,9 +103,10 @@ private struct FilteredTimeEntriesView: View {
 
 private struct TimeEntryRow: View {
     let entry: TimeEntry
+    @Binding var showBillableTag: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 8) {
                     Label {
@@ -147,8 +145,47 @@ private struct TimeEntryRow: View {
                 }
             }
             
+            HStack(alignment: .center) {
+                if showBillableTag {
+                    if entry.isBillable {
+                        Text("Billable")
+                            .font(.caption2).fontWeight(.medium)
+                            .padding(.horizontal, 6).padding(.vertical, 3)
+                            .background(Color.green.opacity(0.2))
+                            .foregroundStyle(.green)
+                            .clipShape(Capsule())
+                    } else {
+                        Text("Non-Billable")
+                            .font(.caption2).fontWeight(.medium)
+                            .padding(.horizontal, 6).padding(.vertical, 3)
+                            .background(Color.orange.opacity(0.2))
+                            .foregroundStyle(.orange)
+                            .clipShape(Capsule())
+                    }
+                }
+                
+                if entry.customRate != nil {
+                    Text("Custom Rate")
+                        .font(.caption2).fontWeight(.medium)
+                        .padding(.horizontal, 6).padding(.vertical, 3)
+                        .background(Color.blue.opacity(0.2))
+                        .foregroundStyle(.blue)
+                        .clipShape(Capsule())
+                }
+                
+                Spacer()
+                
+                if entry.isBillable {
+                    Text(entry.earnings, format: .currency(code: Locale.current.currency?.identifier ?? "USD"))
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(minHeight: 16)
+            
             if let notes = entry.notes, !notes.isEmpty {
-                Divider()
+                Divider().padding(.vertical, 4)
                 Text(notes)
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -157,7 +194,9 @@ private struct TimeEntryRow: View {
         }
         .padding()
         .background(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .backgroundStyle(.background.secondary)
+        .glassEffect(.regular.interactive())
+        //.backgroundStyle(.background.secondary)
+        
     }
 }
 
@@ -187,6 +226,8 @@ enum FilterOption: String, CaseIterable, Identifiable {
     case all = "All Time"
     case pastWeek = "Past 7 Days"
     case pastMonth = "Past 30 Days"
+    case billable = "Billable"
+    case nonBillable = "Non-Billable"
     
     var id: Self { self }
 }
@@ -212,12 +253,12 @@ extension TimeEntry {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: TimeEntry.self, Job.self, configurations: config)
 
-    let job1 = Job(name: "Website Development", colorTheme: .sky)
+    let job1 = Job(name: "Website Development", hourlyRate: 40.0, colorTheme: .sky)
     container.mainContext.insert(job1)
 
-    let entry1 = TimeEntry(startTime: .now.addingTimeInterval(-3600 * 2), endTime: .now.addingTimeInterval(-3600), notes: "Worked on the homepage, focusing on the new responsive layout and fixing navigation bugs.", job: job1)
-    let entry2 = TimeEntry(startTime: .now.addingTimeInterval(-3600 * 26), endTime: .now.addingTimeInterval(-3600 * 24), notes: "Set up the initial project structure and dependencies.", job: job1)
-    let entry3 = TimeEntry(startTime: .now.addingTimeInterval(-3600 * 52), endTime: nil, notes: "This is an ongoing task that has not been completed yet.", job: job1)
+    let entry1 = TimeEntry(startTime: .now.addingTimeInterval(-3600 * 2), endTime: .now.addingTimeInterval(-3600), notes: "Worked on the homepage, focusing on the new responsive layout and fixing navigation bugs.", job: job1, isBillable: true)
+    let entry2 = TimeEntry(startTime: .now.addingTimeInterval(-3600 * 26), endTime: .now.addingTimeInterval(-3600 * 24), notes: "Set up the initial project structure and dependencies.", job: job1, isBillable: true, customRate: 50.0)
+    let entry3 = TimeEntry(startTime: .now.addingTimeInterval(-3600 * 52), endTime: .now.addingTimeInterval(-3600 * 51), notes: "Internal project meeting and planning.", job: job1, isBillable: false)
     
     container.mainContext.insert(entry1)
     container.mainContext.insert(entry2)
@@ -229,7 +270,8 @@ extension TimeEntry {
             job: job1,
             isShowingTimeLoggerSheet: .constant(false),
             sortOption: .constant(.newestFirst),
-            filterOption: .constant(.all)
+            filterOption: .constant(.all),
+            showBillableTag: .constant(true)
          )
          .navigationTitle(job1.name)
          .modelContainer(container)
