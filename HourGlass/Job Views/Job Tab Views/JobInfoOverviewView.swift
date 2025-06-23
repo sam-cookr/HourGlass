@@ -23,6 +23,14 @@ struct JobInfoOverviewView: View {
                             .padding()
                     }
                     
+                    if !(job.jobDescription == nil) {
+                        Text(job.jobDescription!)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .foregroundStyle(.secondary)
+                            .glassEffect(in: .rect(cornerRadius: 16))
+                    }
+                    
                     VStack(alignment: .leading) {
                         if !timeEntries.isEmpty {
                             JobCalendarView(timeEntries: timeEntries)
