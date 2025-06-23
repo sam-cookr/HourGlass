@@ -166,35 +166,26 @@ struct DayCellView: View {
 
 // MARK: - Preview Provider
 
-struct JobCalendarView_Previews: PreviewProvider {
-    static var previews: some View {
-        // --- Sample Data for Preview ---
-        // This data generation is now robust and will not crash if you change the number of jobs.
-        let sampleJobs = [
-            Job(name: "Website Redesign", colorTheme: JobColor.coral),
-
-        ]
+#Preview {
+    let sampleJobs = [
+        Job(name: "Website Redesign", colorTheme: JobColor.coral),
         
-        // Safely generate sample entries to prevent index out of range errors.
-        // It programmatically creates 15 entries and cycles through the jobs array.
-        let sampleEntries: [TimeEntry] = (0..<15).compactMap { index in
-            // Ensure sampleJobs is not empty to prevent a crash from the modulo operator.
-            guard !sampleJobs.isEmpty else { return nil }
-            
-            let randomDayOffset = Int.random(in: -20...20)
-            guard let entryDate = Calendar.current.date(byAdding: .day, value: randomDayOffset, to: .now) else { return nil }
-            
-            // The modulo operator (%) ensures the index is always within the bounds of the sampleJobs array.
-            let job = sampleJobs[index % sampleJobs.count]
-            
-            return TimeEntry(startTime: entryDate, job: job)
-        }
-        // --- End Sample Data ---
+    ]
+    
+    let sampleEntries: [TimeEntry] = (0..<15).compactMap { index in
+        guard !sampleJobs.isEmpty else { return nil }
         
-        ScrollView {
-            JobCalendarView(timeEntries: sampleEntries)
-                .padding()
-        }
-        .background(Color(.systemGroupedBackground))
+        let randomDayOffset = Int.random(in: -20...20)
+        guard let entryDate = Calendar.current.date(byAdding: .day, value: randomDayOffset, to: .now) else { return nil }
+        
+        let job = sampleJobs[index % sampleJobs.count]
+        
+        return TimeEntry(startTime: entryDate, job: job)
     }
+    
+    ScrollView {
+        JobCalendarView(timeEntries: sampleEntries)
+            .padding()
+    }
+    .background(Color(.systemGroupedBackground))
 }
