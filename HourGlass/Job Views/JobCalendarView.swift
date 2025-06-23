@@ -87,7 +87,11 @@ struct JobCalendarView: View {
     }
     
     private var weekdaySymbols: [String] {
-        Calendar.current.shortWeekdaySymbols
+        let calendar = Calendar.current
+        let symbols = calendar.shortWeekdaySymbols
+        let firstWeekdayIndex = calendar.firstWeekday - 1
+        
+        return Array(symbols[firstWeekdayIndex...]) + Array(symbols[..<firstWeekdayIndex])
     }
 
     private func changeMonth(by amount: Int) {
@@ -114,7 +118,7 @@ struct JobCalendarView: View {
     }
 }
 
-// MARK: - Day Cell View (Updated for more obvious entries)
+// MARK: - Day Cell View
 
 struct DayCellView: View {
     let date: Date

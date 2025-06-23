@@ -22,7 +22,6 @@ class Job {
         "server.rack", "pencil.and.ruler", "signature", "at",
         "person.3", "lightbulb", "target", "airplane.departure",
         "car", "shippingbox", "paintbrush.pointed", "briefcase.fill",
-
         "pencil", "highlighter", "paperclip", "link", "ruler",
         "book.closed", "creditcard", "tray.full", "archivebox",
         "printer", "scanner", "phone", "teletype", "mail",
