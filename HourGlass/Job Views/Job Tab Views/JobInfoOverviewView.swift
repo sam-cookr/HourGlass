@@ -18,10 +18,6 @@ struct JobInfoOverviewView: View {
                     JobInfoHeaderView(name: job.name, iconName: job.systemIconName)
                         .padding(.horizontal)
                     
-                    if !job.isCompleted {
-                        JobInfoCardView(job: job)
-                            .padding()
-                    }
                     
                     if !(job.jobDescription == nil) {
                         Text(job.jobDescription!)
@@ -29,7 +25,15 @@ struct JobInfoOverviewView: View {
                             .frame(maxWidth: .infinity)
                             .foregroundStyle(.secondary)
                             .glassEffect(in: .rect(cornerRadius: 16))
+                            .padding()
                     }
+                    
+                    if !job.isCompleted {
+                        JobInfoCardView(job: job)
+                            .padding()
+                    }
+                    
+                    
                     
                     VStack(alignment: .leading) {
                         if !timeEntries.isEmpty {
