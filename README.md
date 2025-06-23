@@ -1,6 +1,7 @@
 # Hourglass
 
 This is a Swift & SwiftUI project I worked on in May & June 2025: **HourGlass**
+(Made for iOS26 only - iOS 18 and earlier available in separate repo)
 
 ## Overview
 
