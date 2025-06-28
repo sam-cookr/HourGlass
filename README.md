@@ -24,6 +24,7 @@ This application allows a user to track hours spent doing a job. Made for people
   - Mark entries as billable or non-billable.
   - Set a custom hourly rate.
   - Add notes describing the work done.
+  - Export time entries for a job as a csv file
 
 - **Time Entries Tab**:
   - View entries as cards showing:
