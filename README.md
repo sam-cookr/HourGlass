@@ -1,8 +1,6 @@
 # Hourglass
 
 This is a Swift & SwiftUI project I worked on in May & June 2025: **HourGlass**
-(Made for iOS26 only - iOS 18 and earlier available in separate repo)
-
 ## Overview
 
 This application allows a user to track hours spent doing a job. Made for people who need to easily track their billable and non-billable hours and gather an overview of their earnings and number of hours spent on a job or project.
